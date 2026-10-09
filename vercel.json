@@ -1,10 +1,33 @@
 {
-  "buildCommand": "cd web && npm install && npm run build",
-  "outputDirectory": "web/dist",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "vue": {
+      "root": "vue",
+      "framework": "vite"
+    },
+    "web": {
+      "root": "web",
+      "framework": "vite"
+    }
+  },
   "rewrites": [
     {
+      "source": "/vue/(.*)",
+      "destination": {
+        "service": "vue"
+      }
+    },
+    {
+      "source": "/vue",
+      "destination": {
+        "service": "vue"
+      }
+    },
+    {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": {
+        "service": "web"
+      }
     }
   ]
 }
