@@ -1,86 +1,388 @@
 <template>
-  <!-- Student Email Login View -->
-  <div v-if="!user" style="min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #004d30 100%); display: flex; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; border-radius: 24px; width: 100%; maxWidth: 480px; padding: 36px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <div style="width: 64px; height: 64px; background: #007A4D; color: #fff; border-radius: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 30px; margin-bottom: 14px;">
-          🎓
-        </div>
-        <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Student Email Login (Vue 3)</h1>
-        <p style="font-size: 13px; color: #64748b;">Community Store • South African University Marketplace</p>
+  <!-- Student Email Login & Sign Up View (Responsive Laptop 2-Col & Phone Stacked) -->
+  <div v-if="!user" style="min-height: 100vh; background: #0f172a; display: flex; flex-direction: column;">
+    <!-- Device Mode Switcher Top Bar -->
+    <div style="background: #1e293b; border-bottom: 1px solid #334155; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; color: #94a3b8; font-size: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-weight: 700; color: #f8fafc;">Layout Mode:</span>
+        <button
+          @click="deviceMode = 'auto'"
+          :style="{ background: deviceMode === 'auto' ? '#007A4D' : '#334155', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }"
+        >
+          🔄 Auto-Detect
+        </button>
+        <button
+          @click="deviceMode = 'laptop'"
+          :style="{ background: deviceMode === 'laptop' ? '#007A4D' : '#334155', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }"
+        >
+          💻 Laptop View
+        </button>
+        <button
+          @click="deviceMode = 'phone'"
+          :style="{ background: deviceMode === 'phone' ? '#007A4D' : '#334155', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }"
+        >
+          📱 Phone View
+        </button>
       </div>
 
-      <div style="background: #e6f4ea; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px; margin-bottom: 20px; display: flex; gap: 10px;">
-        <span style="font-size: 18px;">🛡️</span>
-        <div style="font-size: 12px; color: #166534; line-height: 1.4;">
-          <strong>Verified .ac.za Domain SSO:</strong> No phone numbers or SMS OTP required. Authenticate directly with your university student email.
-        </div>
-      </div>
+      <button
+        v-if="isWaitingForPin"
+        @click="showOutlookModal = true"
+        style="background: #0078D4; color: #fff; border: none; padding: 4px 12px; borderRadius: 6px; fontSize: 11px; fontWeight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;"
+      >
+        📬 View Outlook Message
+      </button>
+    </div>
 
-      <form @submit.prevent="handleLogin" style="display: flex; flex-direction: column; gap: 14px;">
+    <!-- Top Simulated Outlook Notification Banner -->
+    <div
+      v-if="outlookNotification"
+      @click="enteredPin = generatedPin; showOutlookModal = true"
+      style="background: #0078D4; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; z-index: 100;"
+    >
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 20px;">📬</span>
         <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px;">Quick Select University Domain:</label>
-          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-            <button
-              v-for="u in UNIVERSITIES"
-              :key="u.id"
-              type="button"
-              @click="handleDomainSelect(u.domain)"
-              style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; font-size: 11px; cursor: pointer; font-weight: 600;"
-            >
-              {{ u.id }} ({{ u.domain }})
-            </button>
+          <strong style="font-size: 13px;">{{ outlookNotification }}</strong>
+          <div style="font-size: 11px; opacity: 0.9;">Click here to view full Outlook email or autofill PIN into verification box</div>
+        </div>
+      </div>
+      <button @click.stop="outlookNotification = ''" style="background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer;">✕</button>
+    </div>
+
+    <div :style="{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: deviceMode === 'phone' ? '12px' : '24px' }">
+      <div
+        :style="{
+          background: '#ffffff',
+          borderRadius: deviceMode === 'phone' ? '28px' : '24px',
+          width: '100%',
+          maxWidth: deviceMode === 'phone' ? '420px' : deviceMode === 'laptop' ? '1080px' : '980px',
+          overflow: 'hidden',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+          display: deviceMode === 'phone' ? 'flex' : 'grid',
+          flexDirection: deviceMode === 'phone' ? 'column' : undefined,
+          gridTemplateColumns: deviceMode === 'phone' ? undefined : 'repeat(auto-fit, minmax(350px, 1fr))'
+        }"
+      >
+        <!-- Left Column / Header: South African Market Pictures & Student Vibe -->
+        <div
+          :style="{
+            position: 'relative',
+            minHeight: deviceMode === 'phone' ? '200px' : '420px',
+            background: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.85)), url(${currentPic.url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            padding: deviceMode === 'phone' ? '18px' : '32px',
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }"
+        >
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="background: #007A4D; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800;">
+                {{ currentPic.tag }}
+              </span>
+              <span style="background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 6px; font-size: 10px;">
+                Photo {{ selectedMarketPic + 1 }} of {{ MARKET_PICTURES.length }}
+              </span>
+            </div>
+            <h2 :style="{ fontSize: deviceMode === 'phone' ? '18px' : '24px', fontWeight: '800', marginTop: '10px', lineHeight: '1.2' }">
+              {{ currentPic.title }}
+            </h2>
+            <p :style="{ fontSize: deviceMode === 'phone' ? '11px' : '13px', opacity: 0.9, marginTop: '6px', lineHeight: '1.4' }">
+              {{ currentPic.desc }}
+            </p>
+          </div>
+
+          <div>
+            <!-- Thumbnails to cycle market pictures -->
+            <div style="margin-top: 14px; margin-bottom: 10px;">
+              <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; opacity: 0.85;">
+                Tap to explore more market scenes:
+              </div>
+              <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
+                <div
+                  v-for="(pic, idx) in MARKET_PICTURES"
+                  :key="idx"
+                  @click="selectedMarketPic = idx"
+                  :style="{
+                    width: deviceMode === 'phone' ? '52px' : '64px',
+                    height: deviceMode === 'phone' ? '36px' : '44px',
+                    borderRadius: '6px',
+                    backgroundImage: `url(${pic.url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    border: selectedMarketPic === idx ? '2px solid #10b981' : '1px solid rgba(255,255,255,0.4)',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }"
+                />
+              </div>
+            </div>
+
+            <div v-if="deviceMode !== 'phone'" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 8px;">
+                <div style="font-weight: 800; font-size: 13px;">100% Verified</div>
+                <div style="font-size: 10px; opacity: 0.85;">.ac.za Student SSO</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 8px;">
+                <div style="font-weight: 800; font-size: 13px;">Escrow Guard</div>
+                <div style="font-size: 10px; opacity: 0.85;">SnapScan & PayFast</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px;">Student University Email (.ac.za)</label>
-          <input
-            type="email"
-            required
-            v-model="loginEmail"
-            placeholder="e.g. n.khumalo@myuct.ac.za"
-            style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;"
-          />
+        <!-- Right Column / Bottom: Login & Sign Up Form with Outlook PIN -->
+        <div :style="{ padding: deviceMode === 'phone' ? '20px' : '32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }">
+          <div style="display: flex; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 16px;">
+            <button
+              @click="isSignUp = false; isWaitingForPin = false; pinError = '';"
+              :style="{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: !isSignUp ? '#fff' : 'transparent', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: !isSignUp ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }"
+            >
+              Student Sign In
+            </button>
+            <button
+              @click="isSignUp = true; pinError = '';"
+              :style="{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: isSignUp ? '#fff' : 'transparent', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: isSignUp ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }"
+            >
+              Sign Up (Outlook PIN)
+            </button>
+          </div>
+
+          <!-- Quick Domain Selector -->
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 11px; fontWeight: '600'; color: #64748b; margin-bottom: 6px;">Select Student Domain:</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <button
+                v-for="u in UNIVERSITIES"
+                :key="u.id"
+                type="button"
+                @click="handleDomainSelect(u.domain)"
+                style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; font-weight: 600;"
+              >
+                {{ u.id }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Normal Sign In -->
+          <form v-if="!isSignUp" @submit.prevent="handleDirectLogin" style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Student Email (.ac.za)</label>
+              <input
+                type="email"
+                required
+                v-model="loginEmail"
+                placeholder="e.g. n.khumalo@myuct.ac.za"
+                style="width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;"
+              />
+            </div>
+
+            <div>
+              <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Password</label>
+              <input
+                type="password"
+                required
+                v-model="loginPassword"
+                style="width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;"
+              />
+            </div>
+
+            <button
+              type="submit"
+              style="width: 100%; padding: 11px; background: #007A4D; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 4px;"
+            >
+              Log In with Student Email
+            </button>
+          </form>
+
+          <!-- Sign Up with Outlook PIN -->
+          <div v-else>
+            <form v-if="!isWaitingForPin" @submit.prevent="handleSendOutlookPin" style="display: flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px;">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  v-model="loginName"
+                  placeholder="e.g. Nandi Khumalo"
+                  style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;"
+                />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px;">Student Email (Outlook Webmail)</label>
+                <input
+                  type="email"
+                  required
+                  v-model="loginEmail"
+                  placeholder="e.g. n.khumalo@myuct.ac.za"
+                  style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;"
+                />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px;">Student ID Number</label>
+                <input
+                  type="text"
+                  required
+                  v-model="loginId"
+                  placeholder="e.g. KHMNDI004"
+                  style="width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;"
+                />
+              </div>
+
+              <button
+                type="submit"
+                style="width: 100%; padding: 11px; background: #0078D4; color: #ffffff; border: none; border-radius: 8px; font-size: 13px; fontWeight: 700; cursor: pointer; margin-top: 4px;"
+              >
+                📧 Send Verification PIN to Outlook
+              </button>
+            </form>
+
+            <!-- Step 2: Enter 6-Digit PIN -->
+            <div v-else style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="font-weight: 800; color: #166534; font-size: 13px;">
+                  Check Your Outlook Inbox
+                </div>
+                <button
+                  type="button"
+                  @click="showOutlookModal = true"
+                  style="background: #0078D4; color: #fff; border: none; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; cursor: pointer;"
+                >
+                  Open Email
+                </button>
+              </div>
+
+              <p style="font-size: 11px; color: #15803d; margin-bottom: 10px;">
+                We sent a 6-digit PIN to <strong>{{ loginEmail }}</strong>. Enter the PIN below or tap autofill.
+              </p>
+
+              <input
+                type="text"
+                v-model="enteredPin"
+                @input="pinError = ''"
+                placeholder="Enter PIN (e.g. 849201)"
+                maxlength="6"
+                :style="{ width: '100%', boxSizing: 'border-box', padding: '10px', textAlign: 'center', fontSize: '18px', letterSpacing: '4px', fontWeight: '800', borderRadius: '8px', border: pinError ? '2px solid #ef4444' : '2px solid #007A4D', marginBottom: '8px' }"
+              />
+
+              <div v-if="pinError" style="color: #ef4444; font-size: 11px; font-weight: 600; margin-bottom: 8px; text-align: center;">
+                {{ pinError }}
+              </div>
+
+              <button
+                type="button"
+                @click="handleVerifyPinAndRegister"
+                :disabled="!enteredPin"
+                :style="{ width: '100%', padding: '10px', background: enteredPin ? '#007A4D' : '#94a3b8', color: '#ffffff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: enteredPin ? 'pointer' : 'not-allowed' }"
+              >
+                ✓ Verify PIN & Complete Sign Up
+              </button>
+
+              <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px;">
+                <button type="button" @click="enteredPin = generatedPin" style="background: transparent; border: none; color: #0078D4; font-weight: 700; cursor: pointer;">
+                  ⚡ Autofill PIN ({{ generatedPin }})
+                </button>
+                <button type="button" @click="isWaitingForPin = false" style="background: transparent; border: none; color: #64748b; cursor: pointer;">
+                  Edit Email
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1-Tap Fast Demo Accounts -->
+          <div style="margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+            <div style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 6px;">1-Tap Demo Student Login:</div>
+            <div style="display: flex; gap: 6px;">
+              <button
+                type="button"
+                @click="handleQuickLogin('n.khumalo@myuct.ac.za', 'UCT')"
+                style="flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px; font-size: 11px; cursor: pointer; font-weight: 600;"
+              >
+                UCT
+              </button>
+              <button
+                type="button"
+                @click="handleQuickLogin('s.ndlovu@students.wits.ac.za', 'WITS')"
+                style="flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px; font-size: 11px; cursor: pointer; font-weight: 600;"
+              >
+                Wits
+              </button>
+              <button
+                type="button"
+                @click="handleQuickLogin('a.vandermerwe@sun.ac.za', 'STELLENBOSCH')"
+                style="flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px; font-size: 11px; cursor: pointer; font-weight: 600;"
+              >
+                Maties
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Realistic Microsoft Outlook Inbox Dialog Modal -->
+    <div v-if="showOutlookModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 999;">
+      <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 540px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+        <!-- Outlook Blue Header -->
+        <div style="background: #0078D4; color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 22px;">📬</span>
+            <div>
+              <div style="font-weight: 800; font-size: 15px;">Microsoft 365 Outlook</div>
+              <div style="font-size: 11px; opacity: 0.9;">Student Webmail • Exchange Online</div>
+            </div>
+          </div>
+          <button
+            @click="showOutlookModal = false"
+            style="background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer;"
+          >
+            ✕
+          </button>
         </div>
 
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px;">Full Name</label>
-          <input
-            type="text"
-            v-model="loginName"
-            placeholder="e.g. Nandi Khumalo"
-            style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;"
-          />
-        </div>
+        <!-- Email Content Box -->
+        <div style="padding: 20px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+            <div style="color: #64748b;">From: <strong style="color: #0f172a;">verification@communitystore.ac.za</strong></div>
+            <div style="color: #64748b;">To: <strong style="color: #0f172a;">{{ loginEmail }}</strong></div>
+            <div style="color: #64748b; margin-top: 4px;">Subject: <strong style="color: #0078D4;">🔐 Your Community Store Verification PIN: {{ generatedPin }}</strong></div>
+          </div>
 
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px;">Student Number</label>
-          <input
-            type="text"
-            v-model="loginId"
-            placeholder="e.g. KHMNDI004"
-            style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;"
-          />
-        </div>
+          <div style="font-size: 13px; color: #334155; line-height: 1.5; margin-bottom: 16px;">
+            <p>Dumelang / Molo / Hello {{ loginName || 'Student' }},</p>
+            <p>Welcome to the <strong>Community Store Campus Marketplace</strong>. Use the 6-digit one-time security PIN below to complete your registration:</p>
 
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px;">Student Password</label>
-          <input
-            type="password"
-            required
-            v-model="loginPassword"
-            style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;"
-          />
-        </div>
+            <div style="background: #e0f2fe; border: 2px dashed #0284c7; border-radius: 12px; padding: 16px; text-align: center; margin: 14px 0;">
+              <div style="font-size: 11px; font-weight: 700; color: #0369a1; text-transform: uppercase; letter-spacing: 1px;">Your One-Time PIN</div>
+              <div style="font-size: 32px; font-weight: 900; color: #0369a1; letter-spacing: 6px; margin: 6px 0;">{{ generatedPin }}</div>
+              <div style="font-size: 10px; color: #0284c7;">Valid for 10 minutes • Keep this PIN confidential</div>
+            </div>
 
-        <button
-          type="submit"
-          style="width: 100%; padding: 14px; background: #007A4D; color: #ffffff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 6px;"
-        >
-          Sign In with Student Email
-        </button>
-      </form>
+            <p style="font-size: 11px; color: #64748b;">If you did not request this verification code, please ignore this email.</p>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button
+              @click="showOutlookModal = false"
+              style="padding: 8px 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600;"
+            >
+              Close
+            </button>
+            <button
+              @click="enteredPin = generatedPin; showOutlookModal = false;"
+              style="padding: 8px 16px; background: #0078D4; color: #fff; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 700;"
+            >
+              ⚡ Autofill PIN into Verification Box
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -151,12 +453,12 @@
 
     <!-- Main Container -->
     <main style="max-width: 1240px; margin: 0 auto; padding: 24px; flex: 1; width: 100%;">
-      <!-- Banner -->
-      <div v-if="activeTab === 'store'" style="background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.85)), url(https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80); background-size: cover; background-position: center; color: #fff; border-radius: 20px; padding: 40px; margin-bottom: 24px;">
+      <!-- Hero Banner -->
+      <div v-if="activeTab === 'store'" style="background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.85)), url(https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80); background-size: cover; background-position: center; color: #fff; border-radius: 20px; padding: 40px; margin-bottom: 24px;">
         <span style="background: #007A4D; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700;">🇿🇦 MZANSI CAMPUS STORE • VUE 3</span>
         <h2 style="font-size: 28px; font-weight: 800; margin-top: 12px; margin-bottom: 8px;">Trusted South African Student & Local Marketplace</h2>
         <p style="font-size: 14px; max-width: 640px; opacity: 0.9;">
-          Exchange textbooks, electronics, dorm essentials, and local farm goods securely with verified university students and vendors.
+          Exchange textbooks, electronics, dorm essentials, Karoo biltong, and local farm goods securely with verified university students and vendors.
         </p>
       </div>
 
@@ -165,7 +467,7 @@
         <input
           type="text"
           v-model="searchQuery"
-          placeholder="Search textbooks, dorm tech, produce..."
+          placeholder="Search textbooks, dorm tech, Karoo biltong, farm produce..."
           style="flex: 1; min-width: 240px; padding: 10px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;"
         />
 
@@ -368,10 +670,75 @@ const INITIAL_PRODUCTS = [
     safeSpot: 'Neelsie Student Centre Security Kiosk',
     ecoKg: 8.5,
     img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'
+  },
+  {
+    id: 'prod-4',
+    title: 'Karoo Traditional Beef Biltong & Droëwors Craft Pack (500g)',
+    desc: 'Freshly cured spiced traditional beef biltong. High protein student study snack.',
+    price: 165,
+    origPrice: 240,
+    category: 'Local Produce & Food',
+    campus: 'UCT',
+    condition: 'Fresh / New',
+    seller: 'Karoo Heritage Meats',
+    safeSpot: 'Leslie Social Science Plaza Stalls',
+    ecoKg: 2.5,
+    img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'
   }
 ]
 
 const user = ref<{ email: string; name: string } | null>(null)
+const isSignUp = ref(false)
+const isWaitingForPin = ref(false)
+const enteredPin = ref('')
+const generatedPin = '849201'
+const outlookNotification = ref('')
+const showOutlookModal = ref(false)
+const pinError = ref('')
+const deviceMode = ref<'auto' | 'laptop' | 'phone'>('auto')
+const selectedMarketPic = ref(0)
+
+const MARKET_PICTURES = [
+  {
+    title: 'Campus Craft & Startup Fair',
+    tag: '🇿🇦 Craft & Artisan Stalls',
+    desc: 'Handmade student jewelry, beadwork, and campus entrepreneur creations.',
+    url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    title: 'Campus Braai & Hot Food Stalls',
+    tag: '🔥 Street Food & Braai',
+    desc: 'Flame-grilled boerewors rolls, samosas, koeksisters, and artisanal baked goods.',
+    url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    title: 'Student Thrift & Flea Bazaar',
+    tag: '🌿 Thrift & Vintage Fashion',
+    desc: 'Pre-loved clothing, recycled textbook racks, and sustainable zero-waste fashion.',
+    url: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    title: 'Organic Produce & Biltong Market',
+    tag: '🥑 Farm Fresh & Droëwors',
+    desc: 'Fresh avocados, sourdough bread, raw honey, and traditional cured biltong.',
+    url: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    title: 'Jacaranda Campus Walkway Stalls',
+    tag: '🏛️ University Campus Quad',
+    desc: 'Sunny university plaza trade connecting students, faculty, and local vendors.',
+    url: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    title: 'Academic Textbooks & Study Desks',
+    tag: '📚 Textbooks & Dorm Tech',
+    desc: 'Calculus, Law, and Medicine prescribed course notes and study accessories.',
+    url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80'
+  }
+]
+
+const currentPic = computed(() => MARKET_PICTURES[selectedMarketPic.value])
+
 const loginEmail = ref('n.khumalo@myuct.ac.za')
 const loginName = ref('Nandi Khumalo')
 const loginId = ref('KHMNDI004')
@@ -406,10 +773,39 @@ const handleDomainSelect = (domain: string) => {
   loginEmail.value = `${prefix}${domain}`
 }
 
-const handleLogin = () => {
+const handleDirectLogin = () => {
   user.value = {
     email: loginEmail.value,
     name: loginName.value || 'Verified Student'
+  }
+}
+
+const handleQuickLogin = (email: string, campus: string) => {
+  loginEmail.value = email
+  user.value = {
+    email,
+    name: email.includes('khumalo') ? 'Nandi Khumalo' : email.includes('ndlovu') ? 'Sipho Ndlovu' : 'Anika van der Merwe'
+  }
+}
+
+const handleSendOutlookPin = () => {
+  isWaitingForPin.value = true
+  pinError.value = ''
+  outlookNotification.value = `📧 Microsoft Outlook Webmail: [Community Store] Verification PIN is: ${generatedPin} (Sent to ${loginEmail.value})`
+  showOutlookModal.value = true
+}
+
+const handleVerifyPinAndRegister = () => {
+  if (enteredPin.value.trim() === generatedPin) {
+    user.value = {
+      email: loginEmail.value,
+      name: loginName.value || 'Verified Student'
+    }
+    outlookNotification.value = ''
+    showOutlookModal.value = false
+    pinError.value = ''
+  } else {
+    pinError.value = `Incorrect PIN "${enteredPin.value}". Please check your Outlook inbox.`
   }
 }
 
