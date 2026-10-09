@@ -1,0 +1,6 @@
+{
+  "name": "Community Store",
+  "description": "A trusted campus & neighborhood marketplace connecting students, faculty, local vendors, and residents in South Africa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
