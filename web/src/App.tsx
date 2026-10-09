@@ -345,6 +345,12 @@ export default function App() {
             >
               Project Proposal
             </button>
+            <a
+              href="/vue"
+              style={{ background: '#42b883', color: '#ffffff', textDecoration: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              Switch to Vue 3 ➔
+            </a>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
